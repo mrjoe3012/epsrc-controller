@@ -7,6 +7,7 @@ from visualization_msgs.msg import MarkerArray, Marker
 from copy import deepcopy
 from epsrc_controller import PID, PIDParams
 from epsrc_controller.utils import getMessageHash
+from ament_index_python import get_package_share_directory
 import numpy as np
 import rclpy, math
 
@@ -17,44 +18,39 @@ class CommunicatorNode(Node):
         - 'drive-request-topic', string
         - 'car-request-topic', string
         - 'ackermann-topic', string
-        - 'gt-cones-topic', string
         - 'perception-cones-topic', string
         - 'wheel-speeds-topic', string
         - 'vcu-status-topic', string
-        - 'gt-car-state-topic', string
-        - 'sensor-fov', float
-        - 'sensor-range', float
         """
         super().__init__("epsrc_communicator")
         self.declare_parameter("drive-request-topic", "")
         self.declare_parameter("car-request-topic", "")
         self.declare_parameter("ackermann-topic", "")
-        self.declare_parameter("gt-cones-topic", "")
+        self.declare_parameter("simulated-cones-topic", "")
         self.declare_parameter("perception-cones-topic", "")
         self.declare_parameter("wheel-speeds-topic", "")
         self.declare_parameter("vcu-status-topic", "")
-        self.declare_parameter("gt-car-state-topic", "")
-        self.declare_parameter("sensor-fov", 110.0)
-        self.declare_parameter("sensor-range", 12.0)
+        self.declare_parameter("perception-cones-vis-topic", "")
         self.drive_request_topic = self.get_parameter("drive-request-topic").value
         self.car_request_topic = self.get_parameter("car-request-topic").value
         self.ackermann_topic = self.get_parameter("ackermann-topic").value
-        self.gt_cones_topic = self.get_parameter("gt-cones-topic").value
+        self.simulated_cones_topic = self.get_parameter("simulated-cones-topic").value
         self.perception_cones_topic = self.get_parameter("perception-cones-topic").value
         self.wheel_speeds_topic = self.get_parameter("wheel-speeds-topic").value
         self.vcu_status_topic = self.get_parameter("vcu-status-topic").value
-        self.car_state_topic = self.get_parameter("gt-car-state-topic").value
-        self.sensor_fov = math.radians(self.get_parameter("sensor-fov").value)
-        self.sensor_range = self.get_parameter("sensor-range").value
+        self.perception_cones_vis_topic = self.get_parameter("perception-cones-vis-topic").value
         self.drive_pub = self.create_publisher(DriveRequest, self.drive_request_topic, 1)
         self.car_request_sub = self.create_subscription(CarRequest, self.car_request_topic, self.on_car_request, 1)
         self.ackermann_pub = self.create_publisher(AckermannDriveStamped, self.ackermann_topic, 1)
-        self.gt_cones_sub = self.create_subscription(ConeArrayWithCovariance, self.gt_cones_topic, self.on_gt_cones, 1)
+        self.simulated_cones_sub = self.create_subscription(ConeArrayWithCovariance, self.simulated_cones_topic, self.on_simulated_cones, 1)
         self.perception_cones_pub = self.create_publisher(Cone3dArray, self.perception_cones_topic, 1)
         self.wheel_speeds_sub = self.create_subscription(WheelSpeedsStamped, self.wheel_speeds_topic, self.on_wheel_speeds, 1)
         self.vcu_status_pub = self.create_publisher(VCUStatus, self.vcu_status_topic, 1)
-        self.car_state_sub = self.create_subscription(CarState, self.car_state_topic, self.on_car_state, 1)
+        self.perception_cones_vis_pub = self.create_publisher(MarkerArray, self.perception_cones_vis_topic, 1)
 
+        self.last_marker_count = 0
+        self.small_cone_mesh = "file://" + get_package_share_directory("eufs_tracks") + "/meshes/cone.dae"
+        self.large_cone_mesh = "file://" + get_package_share_directory("eufs_tracks") + "/meshes/cone_big.dae"
         pid_params = PIDParams(
             0.075,
             0.1,
@@ -151,15 +147,11 @@ class CommunicatorNode(Node):
                 new_msg.cones.append(cone)
         return new_msg
 
-    def on_gt_cones(self, msg: ConeArrayWithCovariance) -> None:
+    def on_simulated_cones(self, msg: ConeArrayWithCovariance) -> None:
         """
-        1. convert message from eufs format into ugrdv format
-        2. crop cone array to fov and range
-        3. use perception model to distort cones TODO
-        4. publish perception cones for use by controller
+        1. convert message from eufs format into ugrdv format and publish
+        3. publish visualisation of perception cones
         """
-        if self.last_car_state is None: return
-        self.gt_cones_to_local_frame(self.last_car_state, msg)
         positions_and_colours = \
         [
             (Cone3d.BLUE, cone.point) for cone in msg.blue_cones
@@ -186,29 +178,44 @@ class CommunicatorNode(Node):
             cone.position.z = 0.0
             cone.colour = colour
             cones.cones.append(cone)
-        cones = self.crop_to_fov(self.sensor_fov, self.sensor_range, cones)
         cones.meta.hash = getMessageHash(cones)
         self.perception_cones_pub.publish(cones)
-        markers = MarkerArray()
-        for i, cone in enumerate(cones.cones):
+        self.visualise_cones(cones)
+
+    def visualise_cones(self, cones: Cone3dArray) -> None:
+        marker_array = MarkerArray()
+        i = 0
+        colours = {
+            Cone3d.BLUE : (0.0, 0.0, 1.0, 1.0),
+            Cone3d.YELLOW : (1.0, 1.0, 0.0, 1.0),
+            Cone3d.ORANGE : (1.0, 0.5, 0.0, 1.0),
+            Cone3d.LARGEORANGE : (1.0, 0.5, 0.0, 1.0),
+            Cone3d.UNKNOWN : (0.5, 0.5, 0.5, 1.0)
+        }
+        for cone in cones.cones:
             marker = Marker()
-            marker.pose.position.x = cone.position.x
-            marker.pose.position.y = cone.position.y
-            marker.scale.x = 1.0
-            marker.scale.y = 1.0
-            marker.scale.z = 2.0
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.header.frame_id = "base_footprint"
             marker.action = Marker.ADD
             marker.id = i
-            marker.header.frame_id = "base_footprint"
+            marker.color.r, marker.color.g, marker.color.b, marker.color.a = colours[cone.colour]
+            marker.scale.x, marker.scale.y, marker.scale.z = 1.0, 1.0, 1.0
+            marker.pose.position.x = cone.position.x
+            marker.pose.position.y = cone.position.y
+            marker.pose.position.z = 0.0
+            marker.type = Marker.MESH_RESOURCE
+            marker.mesh_resource = self.large_cone_mesh if cone.colour == Cone3d.LARGEORANGE else self.small_cone_mesh
+            marker_array.markers.append(marker)
+            i += 1
+        for j in range(i, self.last_marker_count):
+            marker = Marker()
             marker.header.stamp = self.get_clock().now().to_msg()
-            marker.type = Marker.CUBE
-            marker.color.r = 1.0
-            marker.color.g = 1.0
-            marker.color.b = 1.0
-            marker.color.a = 1.0
-            markers.markers.append(marker)
-        self.marker_pub.publish(markers)
-        # TODO: simulated perception
+            marker.header.frame_id = "base_footprint"
+            marker.id = j
+            marker.action = Marker.DELETE
+            marker_array.markers.append(marker)
+        self.last_marker_count = i
+        self.perception_cones_vis_pub.publish(marker_array)
 
     def get_front_wheel_speed(self, rear_wheel_speed: float, steering_angle: float) -> float:
         """
