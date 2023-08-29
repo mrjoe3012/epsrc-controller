@@ -9,7 +9,6 @@
 
 	<buildtool_depend>ament_python</buildtool_depend>
 
-	<depend>std_msgs</depend>
 	<depend>ugrdv_msgs</depend>
 	<depend>ackermann_msgs</depend>
 	<depend>visualization_msgs</depend>
