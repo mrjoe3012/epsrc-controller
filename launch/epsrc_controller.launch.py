@@ -5,11 +5,14 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     param_info = [
+        ("perception-model", "realistic"),
         ("drive-request-topic", "/drive_request"),
         ("car-request-topic", "/car_request"),
         ("ackermann-topic", "/cmd"),
         ("gt-cones-topic", "/ground_truth/track"),
         ("perception-cones-topic", "/perception_cones"),
+        ("perception-cones-vis-topic", "/perception_cones/vis"),
+        ("simulated-cones-topic", "/simulated_cones"),
         ("wheel-speeds-topic", "/ros_can/wheel_speeds"),
         ("vcu-status-topic", "/vcu_status"),
         ("gt-car-state-topic", "/ground_truth/state"),
@@ -41,30 +44,50 @@ def generate_launch_description():
             (str, 'drive-request-topic'),
             (str, 'car-request-topic'),
             (str, 'ackermann-topic'),
-            (str, 'gt-cones-topic'),
             (str, 'perception-cones-topic'),
+            (str, 'simulated-cones-topic'),
+            (str, 'perception-cones-vis-topic'),
             (str, 'wheel-speeds-topic'),
             (str, 'vcu-status-topic'),
+        ]
+
+        simulated_perception_params = [
+            (bool, 'use_sim_time'),
+            (str, 'gt-cones-topic'),
             (str, 'gt-car-state-topic'),
+            (str, 'simulated-cones-topic'),
+            (str, 'perception-model'),
             (float, 'sensor-range'),
             (float, 'sensor-fov'),
         ]
+
+        def get_params(d):
+            return {
+                p : f(param_values[p]) for f, p in d
+            }
 
         return [LaunchDescription([
             Node(
                 package='epsrc_controller',
                 executable='controller',
-                parameters=[{
-                    p : f(param_values[p]) for f, p in controller_params
-                }]
+                parameters=[
+                    get_params(controller_params)
+                ]
             ),
             Node(
                 package='epsrc_controller',
                 executable='communicator',
-                parameters=[{
-                    p : f(param_values[p]) for f, p in communicator_params
-                }]
+                parameters=[
+                    get_params(communicator_params)
+                ]
             ),
+            Node(
+                package='sim_data_collection',
+                executable='perception_model',
+                parameters=[
+                    get_params(simulated_perception_params)
+                ]
+            )
         ])]
 
     return LaunchDescription(
