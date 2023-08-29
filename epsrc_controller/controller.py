@@ -4,7 +4,6 @@ from eufs_msgs.msg import ConeArrayWithCovariance
 from epsrc_controller import TrackNetwork, NodeType, Path
 from epsrc_controller.utils import getMessageHash
 from numpy.typing import NDArray
-from std_msgs.msg import Float32
 import numpy as np
 import rclpy, math
 
@@ -29,7 +28,6 @@ class ControllerNode(Node):
         self.wheel_base = 1.57
         self.max_steering_angle_magnitude = math.radians(21.0)
         self.info = lambda x: self.get_logger().info(x)
-        self.target_pub = self.create_publisher(Float32, "/target_rpm", 1)
 
     def get_path_velocity(self, cost: float) -> float:
         """
@@ -131,11 +129,6 @@ class ControllerNode(Node):
         car_request.velocity *= self.get_steering_angle_slowdown(car_request.steering_angle)
         car_request.meta.hash = getMessageHash(car_request)
         self.car_request_pub.publish(car_request)
-        # debug
-        t = Float32() 
-        from epsrc_controller.utils import vel_to_rpm
-        t.data = vel_to_rpm(car_request.velocity)
-        self.target_pub.publish(t)
 
 def main():
     rclpy.init()
