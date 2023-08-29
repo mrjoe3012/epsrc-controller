@@ -9,6 +9,8 @@
 
 	<buildtool_depend>ament_python</buildtool_depend>
 
+	<depend>eufs_msgs</depend>
+	<depend>eufs_tracks</depend>
 	<depend>std_msgs</depend>
 	<depend>sim_data_collection</depend>
 	<depend>ugrdv_msgs</depend>
