@@ -128,6 +128,7 @@ class ControllerNode(Node):
         car_request.steering_angle = self.get_steering_angle(first_point)
         car_request.velocity *= self.get_steering_angle_slowdown(car_request.steering_angle)
         car_request.meta.hash = getMessageHash(car_request)
+        car_request.meta.consumed_messages = [msg.meta.hash]
         self.car_request_pub.publish(car_request)
 
 def main():
