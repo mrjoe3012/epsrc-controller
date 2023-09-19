@@ -5,21 +5,21 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     param_info = [
-        ("perception-model", "realistic"),
-        ("drive-request-topic", "/drive_request"),
-        ("car-request-topic", "/car_request"),
-        ("ackermann-topic", "/cmd"),
-        ("gt-cones-topic", "/ground_truth/track"),
-        ("perception-cones-topic", "/perception_cones"),
-        ("perception-cones-vis-topic", "/perception_cones/vis"),
-        ("simulated-cones-topic", "/simulated_cones"),
-        ("wheel-speeds-topic", "/ros_can/wheel_speeds"),
-        ("vcu-status-topic", "/vcu_status"),
-        ("gt-car-state-topic", "/ground_truth/state"),
-        ("path-planning-beam-width", "3"),
+        ("perception_model", "realistic"),
+        ("drive_request_topic", "/drive_request"),
+        ("car_request_topic", "/car_request"),
+        ("ackermann_topic", "/cmd"),
+        ("gt_cones_topic", "/ground_truth/track"),
+        ("perception_cones_topic", "/perception_cones"),
+        ("perception_cones_vis_topic", "/perception_cones/vis"),
+        ("simulated_cones_topic", "/simulated_cones"),
+        ("wheel_speeds_topic", "/ros_can/wheel_speeds"),
+        ("vcu_status_topic", "/vcu_status"),
+        ("gt_car_state_topic", "/ground_truth/state"),
+        ("path_planning_beam_width", "3"),
         ("use_sim_time", "true"),
-        ("sensor-fov", "180.0"),
-        ("sensor-range", "12.0"),
+        ("sensor_fov", "180.0"),
+        ("sensor_range", "12.0"),
     ]
     launch_args = [
         DeclareLaunchArgument(param_name, default_value=default) for \
@@ -34,31 +34,31 @@ def generate_launch_description():
 
         controller_params = [
             (bool, 'use_sim_time'),
-            (str, 'perception-cones-topic'),
-            (str, 'car-request-topic'),
-            (int, 'path-planning-beam-width'),
+            (str, 'perception_cones_topic'),
+            (str, 'car_request_topic'),
+            (int, 'path_planning_beam_width'),
         ]
 
         communicator_params = [
             (bool, 'use_sim_time'),
-            (str, 'drive-request-topic'),
-            (str, 'car-request-topic'),
-            (str, 'ackermann-topic'),
-            (str, 'perception-cones-topic'),
-            (str, 'simulated-cones-topic'),
-            (str, 'perception-cones-vis-topic'),
-            (str, 'wheel-speeds-topic'),
-            (str, 'vcu-status-topic'),
+            (str, 'drive_request_topic'),
+            (str, 'car_request_topic'),
+            (str, 'ackermann_topic'),
+            (str, 'perception_cones_topic'),
+            (str, 'simulated_cones_topic'),
+            (str, 'perception_cones_vis_topic'),
+            (str, 'wheel_speeds_topic'),
+            (str, 'vcu_status_topic'),
         ]
 
         simulated_perception_params = [
             (bool, 'use_sim_time'),
-            (str, 'gt-cones-topic'),
-            (str, 'gt-car-state-topic'),
-            (str, 'simulated-cones-topic'),
-            (str, 'perception-model'),
-            (float, 'sensor-range'),
-            (float, 'sensor-fov'),
+            (str, 'gt_cones_topic'),
+            (str, 'gt_car_state_topic'),
+            (str, 'simulated_cones_topic'),
+            (str, 'perception_model'),
+            (float, 'sensor_range'),
+            (float, 'sensor_fov'),
         ]
 
         def get_params(d):

@@ -9,19 +9,13 @@ import rclpy, math
 
 class ControllerNode(Node):
     def __init__(self):
-        """
-        Parameters:
-        - 'perception-cones-topic', string
-        - 'car-request-topic', string
-        - 'path-planning-beam-width', int
-        """
         super().__init__("epsrc_controller")
-        self.declare_parameter("perception-cones-topic", "")
-        self.declare_parameter("car-request-topic", "")
-        self.declare_parameter("path-planning-beam-width", 3)
-        self.cones_topic = self.get_parameter("perception-cones-topic").value
-        self.car_request_topic = self.get_parameter("car-request-topic").value
-        self.beam_width = self.get_parameter("path-planning-beam-width").value
+        self.declare_parameter("perception_cones_topic", "")
+        self.declare_parameter("car_request_topic", "")
+        self.declare_parameter("path_planning_beam_width", 3)
+        self.cones_topic = self.get_parameter("perception_cones_topic").value
+        self.car_request_topic = self.get_parameter("car_request_topic").value
+        self.beam_width = self.get_parameter("path_planning_beam_width").value
         self.cones_sub = self.create_subscription(Cone3dArray, self.cones_topic, self.on_ugr_cones, 1) 
         self.car_request_pub = self.create_publisher(CarRequest, self.car_request_topic, 1)
 

@@ -13,32 +13,23 @@ import rclpy, math
 
 class CommunicatorNode(Node):
     def __init__(self):
-        """
-        Parameters:
-        - 'drive-request-topic', string
-        - 'car-request-topic', string
-        - 'ackermann-topic', string
-        - 'perception-cones-topic', string
-        - 'wheel-speeds-topic', string
-        - 'vcu-status-topic', string
-        """
         super().__init__("epsrc_communicator")
-        self.declare_parameter("drive-request-topic", "")
-        self.declare_parameter("car-request-topic", "")
-        self.declare_parameter("ackermann-topic", "")
-        self.declare_parameter("simulated-cones-topic", "")
-        self.declare_parameter("perception-cones-topic", "")
-        self.declare_parameter("wheel-speeds-topic", "")
-        self.declare_parameter("vcu-status-topic", "")
-        self.declare_parameter("perception-cones-vis-topic", "")
-        self.drive_request_topic = self.get_parameter("drive-request-topic").value
-        self.car_request_topic = self.get_parameter("car-request-topic").value
-        self.ackermann_topic = self.get_parameter("ackermann-topic").value
-        self.simulated_cones_topic = self.get_parameter("simulated-cones-topic").value
-        self.perception_cones_topic = self.get_parameter("perception-cones-topic").value
-        self.wheel_speeds_topic = self.get_parameter("wheel-speeds-topic").value
-        self.vcu_status_topic = self.get_parameter("vcu-status-topic").value
-        self.perception_cones_vis_topic = self.get_parameter("perception-cones-vis-topic").value
+        self.declare_parameter("drive_request_topic", "")
+        self.declare_parameter("car_request_topic", "")
+        self.declare_parameter("ackermann_topic", "")
+        self.declare_parameter("simulated_cones_topic", "")
+        self.declare_parameter("perception_cones_topic", "")
+        self.declare_parameter("wheel_speeds_topic", "")
+        self.declare_parameter("vcu_status_topic", "")
+        self.declare_parameter("perception_cones_vis_topic", "")
+        self.drive_request_topic = self.get_parameter("drive_request_topic").value
+        self.car_request_topic = self.get_parameter("car_request_topic").value
+        self.ackermann_topic = self.get_parameter("ackermann_topic").value
+        self.simulated_cones_topic = self.get_parameter("simulated_cones_topic").value
+        self.perception_cones_topic = self.get_parameter("perception_cones_topic").value
+        self.wheel_speeds_topic = self.get_parameter("wheel_speeds_topic").value
+        self.vcu_status_topic = self.get_parameter("vcu_status_topic").value
+        self.perception_cones_vis_topic = self.get_parameter("perception_cones_vis_topic").value
         self.drive_pub = self.create_publisher(DriveRequest, self.drive_request_topic, 1)
         self.car_request_sub = self.create_subscription(CarRequest, self.car_request_topic, self.on_car_request, 1)
         self.ackermann_pub = self.create_publisher(AckermannDriveStamped, self.ackermann_topic, 1)
@@ -89,7 +80,6 @@ class CommunicatorNode(Node):
         ackermann.drive.acceleration = acceleration
         self.ackermann_pub.publish(ackermann)
         drive = DriveRequest()
-        drive.ackermann.header.stamp = ackermann.header.stamp
         drive.ackermann = ackermann
         drive.meta.hash = getMessageHash(drive)
         drive.meta.consumed_messages = [self.latest_vcu_status.meta.hash, msg.meta.hash]
